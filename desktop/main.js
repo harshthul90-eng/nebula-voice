@@ -189,7 +189,7 @@ function registerIpcHandlers() {
       webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    authWindow.loadURL('http://localhost:3001/api/auth/google');
+    authWindow.loadURL('https://nebula-voicechat.onrender.com/api/auth/google');
 
     // Intercept the nebula:// deep-link redirect from our backend
     authWindow.webContents.on('will-redirect', (event, url) => {

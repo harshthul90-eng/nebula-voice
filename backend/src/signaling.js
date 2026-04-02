@@ -319,7 +319,6 @@ function setupSignaling(server) {
         case 'invite-to-room': {
           const fromUserId = peerUserMap.get(peerId);
           if (!fromUserId) break;
-          if (!areFriends(fromUserId, msg.friendId)) break; // only friends can invite
           const fromUser = getRegisteredUser(fromUserId);
           const targetOnline = getOnline(msg.friendId);
           if (targetOnline?.ws?.readyState === 1) {

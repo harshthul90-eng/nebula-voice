@@ -2,6 +2,7 @@
  * friends.js — In-memory friends, presence, and user registry.
  * All data resets on server restart (add a DB layer for persistence).
  */
+const { getAllUsers } = require('./auth');
 
 // ── User Registry ─────────────────────────────────────────────────────────────
 // Populated when users authenticate via WS or REST
@@ -95,9 +96,9 @@ function _addFriendship(a, b) {
 
 /** Send a WS message to all online friends of userId. */
 function notifyFriends(userId, msg) {
-  for (const friendId of getFriendIds(userId)) {
-    const info = getOnline(friendId);
-    if (info?.ws?.readyState === 1) {
+  // Global Directory: send to ALL online users except oneself
+  for (const [uid, info] of onlineMap.entries()) {
+    if (uid !== String(userId) && info.ws?.readyState === 1) {
       try { info.ws.send(JSON.stringify(msg)); } catch (_) {}
     }
   }
@@ -105,17 +106,21 @@ function notifyFriends(userId, msg) {
 
 /** Get friend list enriched with live presence info. */
 function getFriendsWithPresence(userId) {
-  return getFriendIds(userId).map(fid => {
-    const user   = getRegisteredUser(fid) || { id: fid, username: 'Unknown', avatar: null };
-    const online = getOnline(fid);
-    return {
-      id:       fid,
-      username: user.username,
-      avatar:   user.avatar,
-      status:   online ? online.status : 'offline',
-      roomId:   online?.roomId || null,
-    };
-  });
+  // Global Directory: return all registered users
+  const allUsers = getAllUsers();
+  return allUsers
+    .filter(u => String(u.id) !== String(userId))
+    .map(user => {
+      const fid = String(user.id);
+      const online = getOnline(fid);
+      return {
+        id:       fid,
+        username: user.username,
+        avatar:   user.avatar,
+        status:   online ? online.status : 'offline',
+        roomId:   online?.roomId || null,
+      };
+    });
 }
 
 module.exports = {

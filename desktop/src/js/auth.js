@@ -2,7 +2,7 @@
  * auth.js — Login, Register, Google OAuth UI logic
  */
 
-const API = 'http://localhost:3001/api';
+const API = 'https://nebula-voicechat.onrender.com/api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function setLoading(btnId, loading) {

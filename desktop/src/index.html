@@ -173,7 +173,7 @@
         </div>
       </div>
       <div class="user-bar-right">
-        <button class="icon-btn friends-btn" id="btn-friends" title="Friends">
+        <button class="icon-btn friends-btn" id="btn-friends" title="All Users">
           👥
           <span class="friends-badge hidden" id="friends-badge">0</span>
         </button>
@@ -186,26 +186,26 @@
     <!-- Friends Panel (slides in from right) -->
     <div class="friends-panel" id="friends-panel">
       <div class="friends-panel-header">
-        <span class="friends-panel-title">👥 Friends</span>
+        <span class="friends-panel-title">👥 All Users</span>
         <button class="friends-close-btn" id="btn-close-friends">✕</button>
       </div>
 
-      <!-- Add friend -->
+      <!-- Add friend / Pending requests deactivated for Global Directory
       <div class="add-friend-wrap">
         <input type="text" id="add-friend-input" class="add-friend-input"
           placeholder="Add by username…" maxlength="32" autocomplete="off" />
         <button class="add-friend-btn" id="btn-add-friend" title="Send request">+</button>
       </div>
 
-      <!-- Pending requests -->
       <div id="pending-requests-section" class="hidden">
         <div class="friends-section-label pending-label">📨 Pending Requests</div>
         <div id="pending-requests-list"></div>
       </div>
+      -->
 
       <!-- Friend list -->
       <div class="friends-list-body" id="friends-list-body">
-        <div class="friends-empty">No friends yet.<br>Add someone to get started! 👋</div>
+        <div class="friends-empty">Loading directory...</div>
       </div>
     </div>
 

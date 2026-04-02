@@ -12,7 +12,7 @@
  *  8. VAD loop → broadcast speaking state
  */
 
-const WS_URL = 'ws://localhost:3001/ws';
+const WS_URL = 'wss://nebula-voicechat.onrender.com/ws';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },

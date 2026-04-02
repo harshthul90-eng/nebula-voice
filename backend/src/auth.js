@@ -224,3 +224,4 @@ router.get('/me', (req, res) => {
 
 module.exports = router;
 module.exports.verifyToken = verifyToken;
+module.exports.getAllUsers = () => [...users.values()];

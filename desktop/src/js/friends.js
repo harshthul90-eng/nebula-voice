@@ -32,12 +32,16 @@ function initFriends() {
 function bindEngineEvents() {
   const engine = getEngine();
   engine.on('friend-status', (data) => {
-    const f = friendsState.friends.get(data.userId);
-    if (f) {
-      f.status = data.status;
-      f.roomId = data.roomId || null;
-      renderFriendList();
+    let f = friendsState.friends.get(data.userId);
+    if (!f) {
+      f = { id: data.userId, username: data.username || 'Unknown', avatar: data.avatar || null };
+      friendsState.friends.set(data.userId, f);
     }
+    f.status = data.status;
+    f.roomId = data.roomId || null;
+    if (data.username) f.username = data.username;
+    if (data.avatar !== undefined) f.avatar = data.avatar;
+    renderFriendList();
   });
 
   engine.on('friend-request', ({ fromId, username, avatar }) => {

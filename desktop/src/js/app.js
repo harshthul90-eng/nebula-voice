@@ -52,7 +52,7 @@ async function loadSavedSession() {
 
   // Verify token is still valid
   try {
-    const res = await fetch('http://localhost:3001/api/me', {
+    const res = await fetch('https://nebula-voicechat.onrender.com/api/me', {
       headers: { Authorization: `Bearer ${saved.token}` },
     });
     if (!res.ok) return false;
