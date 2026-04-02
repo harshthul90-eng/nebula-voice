@@ -88,7 +88,7 @@ a      { color: var(--accent); text-decoration: none; }
   -webkit-app-region: drag;
 }
 
-.titlebar-logo { font-size: 15px; }
+.titlebar-logo { width: 18px; height: 18px; object-fit: contain; border-radius: 50%; }
 .titlebar-appname { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 
 .titlebar-controls {
@@ -165,10 +165,13 @@ a      { color: var(--accent); text-decoration: none; }
   text-align: center; margin-bottom: 28px;
 }
 
-.login-logo {
-  font-size: 52px;
+.login-logo-img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: contain;
+  margin: 0 auto 10px auto;
   display: block;
-  margin-bottom: 10px;
   filter: drop-shadow(0 0 20px var(--accent-glow));
   animation: logoPulse 3s ease-in-out infinite;
 }
