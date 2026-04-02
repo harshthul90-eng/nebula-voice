@@ -178,9 +178,26 @@
           👥
           <span class="friends-badge hidden" id="friends-badge">0</span>
         </button>
+        <button class="icon-btn" id="btn-global-chat" title="World Chat">💬</button>
         <button class="icon-btn" id="btn-toggle-overlay" title="Toggle Overlay (F9)">⊡</button>
         <button class="icon-btn" id="btn-settings" title="Settings">⚙</button>
         <button class="icon-btn danger" id="btn-logout" title="Log Out">↪</button>
+      </div>
+    </div>
+
+    <!-- Global Chat Panel (slides in from left) -->
+    <div class="global-chat-panel" id="global-chat-panel">
+      <div class="friends-panel-header">
+        <span class="friends-panel-title">💬 World Chat</span>
+        <button class="friends-close-btn" id="btn-close-global-chat">✕</button>
+      </div>
+      <div class="chat-messages global-chat-messages" id="global-chat-messages">
+        <div class="chat-empty">Welcome to World Chat! Say hi! 👋</div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" id="global-chat-input" class="chat-input"
+          placeholder="Message everyone..." maxlength="500" autocomplete="off" />
+        <button class="chat-send-btn" id="btn-send-global-chat" title="Send">➤</button>
       </div>
     </div>
 

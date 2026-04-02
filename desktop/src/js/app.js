@@ -139,6 +139,32 @@ function wireDashboard() {
   document.getElementById('btn-toggle-overlay')?.addEventListener('click', toggleOv);
   document.getElementById('btn-toggle-overlay2')?.addEventListener('click', toggleOv);
 
+  // Global Chat toggle
+  const gcPanel = document.getElementById('global-chat-panel');
+  const btnGc = document.getElementById('btn-global-chat');
+  const btnCloseGc = document.getElementById('btn-close-global-chat');
+  
+  const toggleGlobalChat = () => {
+    gcPanel?.classList.toggle('open');
+    btnGc?.classList.toggle('active');
+  };
+  
+  btnGc?.addEventListener('click', toggleGlobalChat);
+  btnCloseGc?.addEventListener('click', toggleGlobalChat);
+
+  // Global Chat sending
+  const gcInput = document.getElementById('global-chat-input');
+  const sendGlobalMessage = () => {
+    const text = gcInput.value.trim();
+    if (!text) return;
+    window.VoiceEngine?.sendGlobalChat(text);
+    gcInput.value = '';
+  };
+  document.getElementById('btn-send-global-chat')?.addEventListener('click', sendGlobalMessage);
+  gcInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendGlobalMessage();
+  });
+
   // Track overlay visibility from main process
   window.nebula?.onOverlayVisibility?.((vis) => {
     State.overlayVisible = vis;
@@ -264,6 +290,48 @@ function updateStatusPicker() {
   if (dot) dot.className = `user-status-dot status-${State.status}`;
 }
 
+// ─── Global Chat Events ──────────────────────────────────────────────────────
+function setupGlobalChat() {
+  window.VoiceEngine?.on('global-chat-message', (data) => {
+    const messages = document.getElementById('global-chat-messages');
+    if (!messages) return;
+    
+    document.querySelector('#global-chat-messages .chat-empty')?.remove();
+    
+    const isSelf = data.userId === State.user?.id;
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = `chat-msg ${isSelf ? 'chat-msg-self' : 'chat-msg-other'}`;
+
+    let avatarHtml = `<div class="chat-avatar">${data.username[0].toUpperCase()}</div>`;
+    if (data.avatar) {
+      avatarHtml = `<div class="chat-avatar"><img src="${data.avatar}" alt="avatar" /></div>`;
+    }
+
+    const time = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    wrapper.innerHTML = `
+      ${avatarHtml}
+      <div class="chat-body">
+        <div class="chat-name">${data.username}</div>
+        <div class="chat-bubble">${escapeHtml(data.text)}</div>
+        <div class="chat-time">${time}</div>
+      </div>
+    `;
+
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+  });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   wireTitlebar();
@@ -271,6 +339,7 @@ async function init() {
   wireQuickRooms();
   wirePTT();
   setupPresence();
+  setupGlobalChat();
 
   // Load session in background while splash plays
   const sessionPromise = loadSavedSession();

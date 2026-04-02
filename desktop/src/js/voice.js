@@ -259,6 +259,16 @@ class VoiceEngine {
         });
         break;
 
+      case 'global-chat-message':
+        this._emit('global-chat-message', {
+          userId:    msg.userId,
+          username:  msg.username,
+          avatar:    msg.avatar,
+          text:      msg.text,
+          timestamp: msg.timestamp,
+        });
+        break;
+
       // ── Friend / presence events ────────────────────────────────────────────────────
       case 'authenticated':       this._emit('authenticated',      { userId: msg.userId }); break;
       case 'friends-list':        this._emit('friends-list',       { friends: msg.friends }); break;
@@ -408,6 +418,11 @@ class VoiceEngine {
   sendChat(text) {
     const trimmed = String(text || '').trim().slice(0, 500);
     if (trimmed) this._send({ type: 'chat-message', text: trimmed });
+  }
+
+  sendGlobalChat(text) {
+    const trimmed = String(text || '').trim().slice(0, 500);
+    if (trimmed) this._send({ type: 'global-chat-message', text: trimmed });
   }
 
   // ─── Per-peer volume ───────────────────────────────────────────────────────

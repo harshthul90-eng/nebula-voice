@@ -236,6 +236,26 @@ function setupSignaling(server) {
           break;
         }
 
+        case 'global-chat-message': {
+          const userId = peerUserMap.get(peerId);
+          if (!userId) break;
+          const user = getRegisteredUser(userId);
+          const text = String(msg.text || '').trim().slice(0, 500);
+          if (!text) break;
+          const payload = JSON.stringify({
+            type: 'global-chat-message',
+            userId,
+            username: user?.username || 'Unknown',
+            avatar: user?.avatar,
+            text,
+            timestamp: Date.now(),
+          });
+          for (const wsClient of wss.clients) {
+            if (wsClient.readyState === 1) wsClient.send(payload);
+          }
+          break;
+        }
+
         case 'set-status': {
           const roomId = getPeerRoom(peerId);
           const validStatuses = ['online', 'away', 'in-match'];
