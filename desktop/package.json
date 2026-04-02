@@ -1,0 +1,29 @@
+{
+  "name": "nebula",
+  "version": "1.0.0",
+  "description": "Low-latency in-game voice communication",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --win"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.nebula.app",
+    "productName": "Nebula",
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "protocols": [{ "name": "Nebula", "schemes": ["nebula"] }],
+    "extraResources": []
+  }
+}

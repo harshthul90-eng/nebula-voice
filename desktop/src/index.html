@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nebula</title>
+  <meta name="description" content="Low-latency in-game voice communication" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/splash.css" />
+</head>
+<body>
+  <!-- Custom Titlebar (frameless) -->
+  <div id="titlebar" class="titlebar hidden">
+    <div class="titlebar-drag">
+      <span class="titlebar-logo">🎙</span>
+      <span class="titlebar-appname">Nebula</span>
+    </div>
+    <div class="titlebar-controls">
+      <button id="btn-minimize" class="tc-btn" title="Minimize">─</button>
+      <button id="btn-maximize" class="tc-btn" title="Maximize">▢</button>
+      <button id="btn-close" class="tc-btn tc-close" title="Close">✕</button>
+    </div>
+  </div>
+
+  <!-- ─── VIEW: Splash Animation ──────────────────────────────────────────── -->
+  <div id="view-splash" class="view active">
+    <!-- Light & Wipe -->
+    <div class="circular-wipe"></div>
+    
+    <!-- Text Reveal Scene -->
+    <div class="splash-text-scene">
+      <div class="splash-welcome">Welcome to</div>
+      <div class="splash-nebula-text">Nebula</div>
+    </div>
+
+    <!-- Sparkle Spin Scene -->
+    <div class="splash-sparkle-scene">
+      <div class="sparkle-icon"></div>
+    </div>
+
+    <!-- Final Logo Scene -->
+    <div class="splash-logo-scene">
+      <div class="n-logo">N</div>
+      <div class="logo-glow"></div>
+    </div>
+  </div>
+
+  <!-- ─── VIEW: Login ───────────────────────────────────────────────────── -->
+  <div id="view-login" class="view hidden">
+    <div class="login-bg">
+      <div class="login-orb orb1"></div>
+      <div class="login-orb orb2"></div>
+      <div class="login-orb orb3"></div>
+    </div>
+
+    <!-- Frameless drag area inside login -->
+    <div class="login-drag-zone" data-drag></div>
+    <div class="login-window-controls">
+      <button class="tc-btn-login" id="btn-minimize-login" title="Minimize">─</button>
+      <button class="tc-btn-login tc-close" id="btn-close-login" title="Close">✕</button>
+    </div>
+
+    <div class="login-container">
+      <div class="login-logo-wrap">
+        <div class="login-logo">🎙</div>
+        <h1 class="login-title">Nebula</h1>
+        <p class="login-subtitle">Gaming voice, redefined.</p>
+      </div>
+
+      <!-- Google Sign-In -->
+      <button id="btn-google-signin" class="btn-google">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <path d="M47.532 24.552c0-1.636-.132-3.2-.384-4.704H24.48v8.928h12.96c-.564 2.988-2.244 5.52-4.764 7.188v5.988h7.716c4.5-4.14 7.14-10.248 7.14-17.4z" fill="#4285F4"/>
+          <path d="M24.48 48c6.48 0 11.916-2.148 15.888-5.832l-7.716-5.988c-2.148 1.44-4.896 2.292-8.172 2.292-6.288 0-11.616-4.248-13.524-9.96H3.024v6.18C6.984 42.636 15.156 48 24.48 48z" fill="#34A853"/>
+          <path d="M10.956 28.512A14.35 14.35 0 0 1 10.2 24c0-1.572.276-3.096.756-4.512v-6.18H3.024A24.02 24.02 0 0 0 .48 24c0 3.876.936 7.548 2.544 10.692l7.932-6.18z" fill="#FBBC05"/>
+          <path d="M24.48 9.528c3.54 0 6.72 1.212 9.216 3.6l6.888-6.888C36.396 2.364 30.96 0 24.48 0 15.156 0 6.984 5.364 3.024 13.308l7.932 6.18c1.908-5.712 7.236-9.96 13.524-9.96z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <!-- Auth tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Login</button>
+        <button class="auth-tab" data-tab="register">Register</button>
+      </div>
+
+      <!-- Login form -->
+      <form id="form-login" class="auth-form active" autocomplete="on" novalidate>
+        <div class="input-group">
+          <label for="login-username">Username</label>
+          <input id="login-username" type="text" placeholder="your_username" autocomplete="username" spellcheck="false" />
+        </div>
+        <div class="input-group">
+          <label for="login-password">Password</label>
+          <div class="input-wrap">
+            <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" />
+            <button type="button" class="btn-show-pass" data-target="login-password" tabindex="-1" aria-label="Toggle password">👁</button>
+          </div>
+        </div>
+        <div id="login-error" class="auth-error hidden"></div>
+        <button type="submit" class="btn-primary btn-full" id="btn-login">
+          <span class="btn-label">Sign In</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </form>
+
+      <!-- Register form -->
+      <form id="form-register" class="auth-form hidden" autocomplete="on" novalidate>
+        <div class="input-group">
+          <label for="reg-username">Choose Username</label>
+          <input id="reg-username" type="text" placeholder="coolgamer_99" autocomplete="username" spellcheck="false" maxlength="32" />
+          <span class="input-hint">3–32 chars, letters, numbers, underscores</span>
+        </div>
+        <div class="input-group">
+          <label for="reg-password">Create Password</label>
+          <div class="input-wrap">
+            <input id="reg-password" type="password" placeholder="Min. 6 characters" autocomplete="new-password" />
+            <button type="button" class="btn-show-pass" data-target="reg-password" tabindex="-1" aria-label="Toggle password">👁</button>
+          </div>
+        </div>
+        <div id="register-error" class="auth-error hidden"></div>
+        <button type="submit" class="btn-primary btn-full" id="btn-register">
+          <span class="btn-label">Create Account</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── VIEW: Dashboard ───────────────────────────────────────────────── -->
+  <div id="view-dashboard" class="view hidden">
+    <!-- Custom titlebar for dashboard/room views -->
+    <div class="titlebar" id="titlebar-main">
+      <div class="titlebar-drag">
+        <span class="titlebar-logo">🎙</span>
+        <span class="titlebar-appname">Nebula</span>
+      </div>
+      <div class="titlebar-controls">
+        <button class="tc-btn" id="btn-minimize2" title="Minimize">─</button>
+        <button class="tc-btn" id="btn-maximize2" title="Maximize">▢</button>
+        <button class="tc-btn tc-close" id="btn-close2" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- User bar -->
+    <div class="user-bar">
+      <div class="user-bar-left">
+        <div class="user-avatar-wrap">
+          <div class="user-avatar" id="dash-avatar">?</div>
+          <!-- Status dot (clickable) -->
+          <span class="user-status-dot status-online" id="user-status-dot" title="Online"></span>
+          <!-- Status picker popover -->
+          <div class="status-picker" id="status-picker">
+            <button class="status-option active" data-status="online">
+              <span class="status-option-dot status-online"></span> Online
+            </button>
+            <button class="status-option" data-status="away">
+              <span class="status-option-dot status-away"></span> Away
+            </button>
+            <button class="status-option" data-status="in-match">
+              <span class="status-option-dot status-in-match"></span> In-Match
+            </button>
+          </div>
+        </div>
+        <div class="user-info">
+          <div class="user-name" id="dash-username">Loading…</div>
+          <div class="user-status-text" id="dash-status-text">Online</div>
+        </div>
+      </div>
+      <div class="user-bar-right">
+        <button class="icon-btn friends-btn" id="btn-friends" title="Friends">
+          👥
+          <span class="friends-badge hidden" id="friends-badge">0</span>
+        </button>
+        <button class="icon-btn" id="btn-toggle-overlay" title="Toggle Overlay (F9)">⊡</button>
+        <button class="icon-btn" id="btn-settings" title="Settings">⚙</button>
+        <button class="icon-btn danger" id="btn-logout" title="Log Out">↪</button>
+      </div>
+    </div>
+
+    <!-- Friends Panel (slides in from right) -->
+    <div class="friends-panel" id="friends-panel">
+      <div class="friends-panel-header">
+        <span class="friends-panel-title">👥 Friends</span>
+        <button class="friends-close-btn" id="btn-close-friends">✕</button>
+      </div>
+
+      <!-- Add friend -->
+      <div class="add-friend-wrap">
+        <input type="text" id="add-friend-input" class="add-friend-input"
+          placeholder="Add by username…" maxlength="32" autocomplete="off" />
+        <button class="add-friend-btn" id="btn-add-friend" title="Send request">+</button>
+      </div>
+
+      <!-- Pending requests -->
+      <div id="pending-requests-section" class="hidden">
+        <div class="friends-section-label pending-label">📨 Pending Requests</div>
+        <div id="pending-requests-list"></div>
+      </div>
+
+      <!-- Friend list -->
+      <div class="friends-list-body" id="friends-list-body">
+        <div class="friends-empty">No friends yet.<br>Add someone to get started! 👋</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="dashboard-content">
+      <div class="dash-section">
+        <h2 class="section-title">Voice Rooms</h2>
+
+        <!-- Join/Create room -->
+        <div class="room-input-wrap">
+          <input id="room-id-input" type="text" class="room-input" placeholder="Room name or 5-digit code" spellcheck="false" maxlength="40" />
+          <div class="capacity-wrap">
+            <label class="capacity-label" for="room-capacity">👥 Limit</label>
+            <select id="room-capacity" class="capacity-select">
+              <option value="2">2 players</option>
+              <option value="4">4 players</option>
+              <option value="8" selected>8 players</option>
+              <option value="16">16 players</option>
+              <option value="32">32 players</option>
+              <option value="50">Unlimited</option>
+            </select>
+          </div>
+          <button class="btn-primary" id="btn-join-room">
+            <span>Join / Create</span>
+          </button>
+        </div>
+
+        <!-- Quick rooms -->
+        <div class="quick-rooms">
+          <p class="section-subtitle">Quick Join</p>
+          <div class="quick-room-list">
+            <button class="quick-room-btn" data-room="general">🔊 General</button>
+            <button class="quick-room-btn" data-room="squad">🎮 Squad</button>
+            <button class="quick-room-btn" data-room="grinding">⚔️ Grinding</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <p class="section-subtitle">Connection Status</p>
+        <div class="status-badge" id="connection-status">
+          <span class="status-dot"></span>
+          <span id="status-text">Not Connected</span>
+        </div>
+      </div>
+
+      <!-- Overlay toggle hint -->
+      <div class="hint-card">
+        <span class="hint-icon">💡</span>
+        <span>Press <kbd>F9</kbd> to toggle overlay • <kbd>V</kbd> to mute/unmute • Share the <kbd>5-digit code</kbd> to invite friends</span>
+      </div>
+    </div>
+
+    <!-- Bottom control bar -->
+    <div class="control-bar">
+      <button class="ctrl-btn" id="btn-dash-mute" title="Mute Mic">
+        <span class="ctrl-icon">🎤</span>
+        <span class="ctrl-label">Mute</span>
+      </button>
+      <button class="ctrl-btn" id="btn-dash-deafen" title="Deafen">
+        <span class="ctrl-icon">🔊</span>
+        <span class="ctrl-label">Deafen</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── VIEW: Voice Room ──────────────────────────────────────────────── -->
+  <div id="view-room" class="view hidden">
+    <!-- Custom titlebar -->
+    <div class="titlebar" id="titlebar-room">
+      <div class="titlebar-drag">
+        <span class="titlebar-logo">🎙</span>
+        <span class="titlebar-appname" id="room-titlebar-name">Room</span>
+      </div>
+      <div class="titlebar-controls">
+        <button class="tc-btn" id="btn-minimize3" title="Minimize">─</button>
+        <button class="tc-btn" id="btn-maximize3" title="Maximize">▢</button>
+        <button class="tc-btn tc-close" id="btn-close3" title="Close">✕</button>
+      </div>
+    </div>
+
+    <!-- Room header -->
+    <div class="room-header">
+      <div class="room-header-left">
+        <div class="room-icon">🎧</div>
+        <div>
+          <div class="room-name" id="room-display-name">Squad Alpha</div>
+          <div class="room-peer-count">
+            <span id="peer-count">1</span>/<span id="peer-max">–</span> players
+          </div>
+        </div>
+      </div>
+      <!-- Room code badge (injected by room.js after join) -->
+      <div id="room-code-wrap"></div>
+      <button class="icon-btn room-invite-toggle" id="btn-room-invite" title="Invite Friends">👥</button>
+      <button class="icon-btn" id="btn-toggle-overlay2" title="Overlay (F9)">⊡</button>
+    </div>
+
+    <!-- Room friends invite panel (slides down from header) -->
+    <div class="room-friends-panel hidden" id="room-friends-panel">
+      <div class="rfp-header">
+        <span class="rfp-title">Invite Friends</span>
+        <button class="rfp-close" id="btn-close-rfp">✕</button>
+      </div>
+      <div class="rfp-list" id="rfp-list">
+        <div class="rfp-empty">Loading friends…</div>
+      </div>
+    </div>
+
+    <!-- Room tab bar -->
+    <div class="room-tab-bar">
+      <button class="room-tab-btn active" id="btn-tab-voice">
+        <span>🎙</span> Voice
+      </button>
+      <button class="room-tab-btn" id="btn-tab-chat">
+        <span>💬</span> Chat
+        <span class="chat-unread-badge hidden" id="chat-unread-badge">0</span>
+      </button>
+    </div>
+
+    <!-- Voice tab: participant list -->
+    <div class="room-tab-content active" id="tab-voice">
+      <div class="participant-list" id="participant-list">
+        <!-- Populated by room.js -->
+      </div>
+      <!-- Network stats -->
+      <div class="net-stats" id="net-stats">
+        <span id="stat-latency">-- ms</span>
+        <span id="stat-packet-loss">-- loss</span>
+      </div>
+    </div>
+
+    <!-- Chat tab -->
+    <div class="room-tab-content hidden" id="tab-chat">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty">No messages yet. Say hi! 👋</div>
+      </div>
+      <div class="chat-input-wrap">
+        <input type="text" id="chat-input" class="chat-input"
+          placeholder="Message the room…" maxlength="500" autocomplete="off" />
+        <button class="chat-send-btn" id="btn-send-chat" title="Send">➤</button>
+      </div>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="control-bar room-controls">
+      <button class="ctrl-btn" id="btn-mute" title="Toggle Mute (V)">
+        <span class="ctrl-icon">🎤</span>
+        <span class="ctrl-label">Mute</span>
+      </button>
+      <button class="ctrl-btn danger" id="btn-leave" title="Leave Room">
+        <span class="ctrl-icon">📴</span>
+        <span class="ctrl-label">Leave</span>
+      </button>
+      <button class="ctrl-btn" id="btn-deafen" title="Deafen (mute all)">
+        <span class="ctrl-icon">🔊</span>
+        <span class="ctrl-label">Deafen</span>
+      </button>
+      <!-- PTT mode toggle -->
+      <button class="ctrl-btn ptt-mode-btn" id="btn-ptt-mode" title="Switch between Toggle and Push-to-Talk">
+        <span class="ctrl-icon" id="ptt-mode-icon">🔁</span>
+        <span class="ctrl-label" id="ptt-mode-label">Toggle</span>
+      </button>
+      <!-- Voice Effects -->
+      <button class="ctrl-btn effects-btn" id="btn-effects" title="Voice Modulator">
+        <span class="ctrl-icon" id="effects-icon">🎤</span>
+        <span class="ctrl-label" id="effects-label">Normal</span>
+      </button>
+    </div>
+
+    <!-- Voice Effects Picker -->
+    <div class="effects-picker hidden" id="effects-picker">
+      <div class="effects-picker-title">🎛 Voice Modulator</div>
+      <div class="effects-grid">
+        <button class="effect-card active" data-effect="normal">
+          <span class="effect-emoji">🎤</span>
+          <span class="effect-name">Normal</span>
+        </button>
+        <button class="effect-card" data-effect="robot">
+          <span class="effect-emoji">🤖</span>
+          <span class="effect-name">Robot</span>
+        </button>
+        <button class="effect-card" data-effect="monster">
+          <span class="effect-emoji">😈</span>
+          <span class="effect-name">Monster</span>
+        </button>
+        <button class="effect-card" data-effect="alien">
+          <span class="effect-emoji">👾</span>
+          <span class="effect-name">Alien</span>
+        </button>
+        <button class="effect-card" data-effect="radio">
+          <span class="effect-emoji">📻</span>
+          <span class="effect-name">Radio</span>
+        </button>
+        <button class="effect-card" data-effect="echo">
+          <span class="effect-emoji">🌊</span>
+          <span class="effect-name">Echo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PTT live badge -->
+    <div class="ptt-live-badge" id="ptt-live-badge">
+      <span class="ptt-live-dot"></span> LIVE
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/voice.js"></script>
+  <script src="js/room.js"></script>
+  <script src="js/friends.js"></script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+/* splash.css */
+#view-splash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* We manage its visibility using .active and .hidden classes like other views */
+}
+
+/* Base structures */
+.splash-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── SCENE 1: Text Horizontal Sweep Reveal ─── */
+.splash-text-scene {
+  position: absolute;
+  display: flex;
+  gap: 0.5rem;
+  font-size: 3rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 1;
+  animation: dissolveText 0.8s ease forwards;
+  animation-delay: 2.5s; /* dissolves at 2.5s */
+}
+
+.splash-welcome {
+  color: #fff;
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  animation: sweepReveal 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.splash-nebula-text {
+  background: linear-gradient(90deg, #9b51e0, #ff007f);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  animation: sweepReveal 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: 0.4s;
+}
+
+/* The light sweep effect overlay on text */
+.splash-nebula-text::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+  animation: lightSweep 1.2s ease-in-out forwards;
+  animation-delay: 0.3s;
+}
+
+/* ─── SCENE 2: The Sparkle ─── */
+.splash-sparkle-scene {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  animation: sparkleInOut 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation-delay: 2.8s; /* Comes in slightly after text starts dissolving */
+}
+
+.sparkle-icon {
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, #ff007f 0%, transparent 70%);
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  animation: spinSparkle 1.5s linear infinite;
+  box-shadow: 0 0 20px #ff007f, 0 0 40px #ff007f;
+}
+
+/* ─── SCENE 3 & 4: Circular wipe to N logo ─── */
+.splash-logo-scene {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.8);
+  animation: logoReveal 1s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+  animation-delay: 4.0s;
+}
+
+.circular-wipe {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: #ff007f;
+  animation: circleWipe 0.8s linear forwards;
+  animation-delay: 3.5s;
+  opacity: 0;
+}
+
+/* Multi-colored 'N' Logo */
+.n-logo {
+  font-size: 5rem;
+  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #4285F4 0%, #34A853 20%, #FBBC05 40%, #EA4335 60%, #ff007f 80%, #00ffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(255,255,255,0.5));
+}
+
+/* Final glow */
+.logo-glow {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 60%);
+  opacity: 0;
+  animation: finalGlow 2s ease-in-out infinite alternate;
+  animation-delay: 4.8s;
+}
+
+
+/* ─── ANIMATION KEYFRAMES ─── */
+
+@keyframes sweepReveal {
+  0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); transform: translateX(-10px); }
+  100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); transform: translateX(0); }
+}
+
+@keyframes lightSweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+@keyframes dissolveText {
+  0% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.95); filter: blur(4px); }
+}
+
+@keyframes sparkleInOut {
+  0% { opacity: 0; transform: scale(0.2); }
+  30% { opacity: 1; transform: scale(1.2); }
+  60% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(2); filter: blur(10px); }
+}
+
+@keyframes spinSparkle {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); } /* four-pointed star looks same at 90deg, spin halfway seamlessly */
+}
+
+@keyframes circleWipe {
+  0% { opacity: 1; transform: scale(0.5); border-width: 10px; border-color: #ff007f; }
+  100% { opacity: 0; transform: scale(2); border-width: 0px; border-color: transparent; }
+}
+
+@keyframes logoReveal {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes finalGlow {
+  0% { opacity: 0.3; transform: scale(1.5); }
+  100% { opacity: 0.7; transform: scale(2.2); }
+}
