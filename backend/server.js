@@ -3,8 +3,20 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const passport = require('passport');
+const mongoose = require('mongoose');
 const { setupSignaling } = require('./src/signaling');
 const authRoutes = require('./src/auth');
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI;
+if (MONGODB_URI) {
+  mongoose.connect(MONGODB_URI)
+    .then(() => console.log('  ✅  MongoDB Connected'))
+    .catch(err => console.error('  ❌  MongoDB Connection Error:', err));
+} else {
+  console.warn('  ⚠️  MONGODB_URI not found in .env — persistence disabled');
+}
+
 
 const app = express();
 const server = http.createServer(app);

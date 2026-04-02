@@ -1,32 +1,11 @@
 /**
- * friends.js — In-memory friends, presence, and user registry.
- * All data resets on server restart (add a DB layer for persistence).
+ * friends.js — Persistence-backed presence and social graph.
+ * Presence (onlineMap) remains in-memory for performance.
+ * User registry and friendships are powered by MongoDB.
  */
-const { getAllUsers } = require('./auth');
+const User = require('./models/User');
 
-// ── User Registry ─────────────────────────────────────────────────────────────
-// Populated when users authenticate via WS or REST
-const userRegistry = new Map(); // userId → { id, username, avatar }
-
-function registerUser(userId, info) {
-  userRegistry.set(String(userId), {
-    id:       String(userId),
-    username: info.username || 'Unknown',
-    avatar:   info.avatar   || null,
-  });
-}
-
-function findUserByUsername(query) {
-  const q = (query || '').toLowerCase().trim();
-  if (!q) return null;
-  return [...userRegistry.values()].find(u => u.username.toLowerCase() === q) || null;
-}
-
-function getRegisteredUser(userId) {
-  return userRegistry.get(String(userId)) || null;
-}
-
-// ── Online Presence ───────────────────────────────────────────────────────────
+// ── Online Presence (In-Memory) ──────────────────────────────────────────────
 const onlineMap = new Map(); // userId → { ws, peerId, status, roomId, username, avatar }
 
 function setOnline(userId, info) { onlineMap.set(String(userId), info); }
@@ -34,69 +13,107 @@ function setOffline(userId)       { onlineMap.delete(String(userId)); }
 function getOnline(userId)        { return onlineMap.get(String(userId)) || null; }
 function isOnline(userId)         { return onlineMap.has(String(userId)); }
 
-// ── Friend Store ──────────────────────────────────────────────────────────────
-const friendships = new Map(); // userId → Set<userId>
-const pendingReqs = new Map(); // toUserId → Set<fromUserId>
+// ── User / Friend Logic (MongoDB) ─────────────────────────────────────────────
 
-function sendFriendRequest(fromId, toId) {
+async function registerUser(userId, info) {
+  // Check if user already exists in DB
+  const existing = await User.findOne({ id: String(userId) });
+  if (!existing) {
+    await User.create({
+      id: String(userId),
+      username: info.username || 'Unknown',
+      avatar: info.avatar || null,
+    });
+  }
+}
+
+async function findUserByUsername(query) {
+  const q = (query || '').toLowerCase().trim();
+  if (!q) return null;
+  return await User.findOne({ username: { $regex: new RegExp(`^${q}$`, 'i') } });
+}
+
+async function getRegisteredUser(userId) {
+  return await User.findOne({ id: String(userId) });
+}
+
+async function sendFriendRequest(fromId, toId) {
   fromId = String(fromId); toId = String(toId);
-  if (fromId === toId)       return { error: 'Cannot add yourself' };
-  if (areFriends(fromId, toId)) return { error: 'Already friends' };
+  if (fromId === toId) return { error: 'Cannot add yourself' };
+  
+  const fromUser = await User.findOne({ id: fromId });
+  const toUser = await User.findOne({ id: toId });
+  if (!fromUser || !toUser) return { error: 'User not found' };
+
+  if (fromUser.friendIds.includes(toId)) return { error: 'Already friends' };
+  
   // If target already sent us a request → auto-accept
-  if (pendingReqs.get(fromId)?.has(toId)) return acceptFriendRequest(fromId, toId);
-  if (!pendingReqs.has(toId)) pendingReqs.set(toId, new Set());
-  if (pendingReqs.get(toId).has(fromId)) return { error: 'Request already pending' };
-  pendingReqs.get(toId).add(fromId);
+  if (fromUser.pendingRequests.includes(toId)) {
+    return await acceptFriendRequest(fromId, toId);
+  }
+
+  // Check if we already sent a request
+  if (toUser.pendingRequests.includes(fromId)) return { error: 'Request already pending' };
+
+  await User.updateOne({ id: toId }, { $addToSet: { pendingRequests: fromId } });
   return { ok: true };
 }
 
-function acceptFriendRequest(userId, fromId) {
+async function acceptFriendRequest(userId, fromId) {
   userId = String(userId); fromId = String(fromId);
-  const reqs = pendingReqs.get(userId);
-  if (!reqs?.has(fromId)) return { error: 'No request found' };
-  reqs.delete(fromId);
-  _addFriendship(userId, fromId);
+  
+  const user = await User.findOne({ id: userId });
+  if (!user || !user.pendingRequests.includes(fromId)) return { error: 'No request found' };
+
+  // Remove from pending, add to friends for both
+  await User.updateOne({ id: userId }, { 
+    $pull: { pendingRequests: fromId },
+    $addToSet: { friendIds: fromId }
+  });
+  await User.updateOne({ id: fromId }, { 
+    $addToSet: { friendIds: userId }
+  });
+
+  return { ok: true, autoAccepted: true };
+}
+
+async function declineFriendRequest(userId, fromId) {
+  await User.updateOne({ id: String(userId) }, { $pull: { pendingRequests: String(fromId) } });
   return { ok: true };
 }
 
-function declineFriendRequest(userId, fromId) {
-  pendingReqs.get(String(userId))?.delete(String(fromId));
-  return { ok: true };
-}
-
-function removeFriend(aId, bId) {
+async function removeFriend(aId, bId) {
   aId = String(aId); bId = String(bId);
-  friendships.get(aId)?.delete(bId);
-  friendships.get(bId)?.delete(aId);
+  await User.updateOne({ id: aId }, { $pull: { friendIds: bId } });
+  await User.updateOne({ id: bId }, { $pull: { friendIds: aId } });
+  return { ok: true };
 }
 
-function getFriendIds(userId) {
-  return [...(friendships.get(String(userId)) || [])];
+async function getFriendIds(userId) {
+  const user = await User.findOne({ id: String(userId) });
+  return user ? user.friendIds : [];
 }
 
-function getPendingRequests(userId) {
-  return [...(pendingReqs.get(String(userId)) || [])].map(fromId => ({
-    fromId,
-    user: getRegisteredUser(fromId) || { id: fromId, username: 'Unknown', avatar: null },
+async function getPendingRequests(userId) {
+  const user = await User.findOne({ id: String(userId) });
+  if (!user) return [];
+  
+  const requests = await User.find({ id: { $in: user.pendingRequests } });
+  return requests.map(u => ({
+    fromId: u.id,
+    user: { id: u.id, username: u.username, avatar: u.avatar }
   }));
 }
 
-function areFriends(a, b) {
-  return !!(friendships.get(String(a))?.has(String(b)));
-}
-
-function _addFriendship(a, b) {
-  if (!friendships.has(a)) friendships.set(a, new Set());
-  if (!friendships.has(b)) friendships.set(b, new Set());
-  friendships.get(a).add(b);
-  friendships.get(b).add(a);
+async function areFriends(a, b) {
+  const user = await User.findOne({ id: String(a) });
+  return user ? user.friendIds.includes(String(b)) : false;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Send a WS message to all online friends of userId. */
+/** Send a WS message to all online users (Global Directory logic). */
 function notifyFriends(userId, msg) {
-  // Global Directory: send to ALL online users except oneself
   for (const [uid, info] of onlineMap.entries()) {
     if (uid !== String(userId) && info.ws?.readyState === 1) {
       try { info.ws.send(JSON.stringify(msg)); } catch (_) {}
@@ -104,10 +121,9 @@ function notifyFriends(userId, msg) {
   }
 }
 
-/** Get friend list enriched with live presence info. */
-function getFriendsWithPresence(userId) {
-  // Global Directory: return all registered users
-  const allUsers = getAllUsers();
+/** Get list of users with presence info (currently returns ALL users for Global Directory). */
+async function getFriendsWithPresence(userId) {
+  const allUsers = await User.find({});
   return allUsers
     .filter(u => String(u.id) !== String(userId))
     .map(user => {

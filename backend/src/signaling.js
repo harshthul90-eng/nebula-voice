@@ -21,6 +21,7 @@ function setupSignaling(server) {
   // ─── Helpers ────────────────────────────────────────────────────────────────
   function broadcast(roomId, message, excludePeerId = null) {
     const room = getRoomPeers(roomId);
+    if (!room) return;
     const payload = JSON.stringify(message);
     for (const [peerId, peer] of room) {
       if (peerId !== excludePeerId && peer.ws.readyState === 1 /* OPEN */) {
@@ -45,7 +46,7 @@ function setupSignaling(server) {
     ws.send(JSON.stringify({ type: 'connected', peerId }));
 
     // ─── Message Handler ─────────────────────────────────────────────────────
-    ws.on('message', (data) => {
+    ws.on('message', async (data) => {
       let msg;
       try {
         msg = JSON.parse(data);
@@ -59,18 +60,21 @@ function setupSignaling(server) {
         case 'authenticate': {
           const user = verifyToken(msg.token);
           if (!user) { ws.send(JSON.stringify({ type: 'auth-error' })); break; }
-          registerUser(user.id, user);
+          
+          await registerUser(user.id, user); // Async DB call
           peerUserMap.set(peerId, String(user.id));
           setOnline(user.id, { ws, peerId, status: 'online', roomId: null, username: user.username, avatar: user.avatar });
-          // Tell friends this user is online
+          
+          // Tell others this user is online
           notifyFriends(user.id, {
             type: 'friend-status', userId: String(user.id), username: user.username,
             avatar: user.avatar, status: 'online', roomId: null,
           });
-          // Send back pending friend requests so UI can load them
+          
           ws.send(JSON.stringify({ type: 'authenticated', userId: String(user.id) }));
-          const pending = getPendingRequests(user.id);
-          if (pending.length) ws.send(JSON.stringify({ type: 'pending-requests', requests: pending }));
+          
+          const pending = await getPendingRequests(user.id);
+          if (pending?.length) ws.send(JSON.stringify({ type: 'pending-requests', requests: pending }));
           break;
         }
 
@@ -183,7 +187,7 @@ function setupSignaling(server) {
           if (leavingUserId) {
             const pInfo = getOnline(leavingUserId);
             if (pInfo) { pInfo.status = 'online'; pInfo.roomId = null; }
-            const lu = getRegisteredUser(leavingUserId);
+            const lu = await getRegisteredUser(leavingUserId);
             notifyFriends(leavingUserId, { type: 'friend-status', userId: leavingUserId, username: lu?.username, avatar: lu?.avatar, status: 'online', roomId: null });
           }
           break;
@@ -239,7 +243,7 @@ function setupSignaling(server) {
         case 'global-chat-message': {
           const userId = peerUserMap.get(peerId);
           if (!userId) break;
-          const user = getRegisteredUser(userId);
+          const user = await getRegisteredUser(userId);
           const text = String(msg.text || '').trim().slice(0, 500);
           if (!text) break;
           const payload = JSON.stringify({
@@ -271,7 +275,7 @@ function setupSignaling(server) {
           if (userId2) {
             const pInfo = getOnline(userId2);
             if (pInfo) pInfo.status = status;
-            const u2 = getRegisteredUser(userId2);
+            const u2 = await getRegisteredUser(userId2);
             notifyFriends(userId2, { type: 'friend-status', userId: userId2, username: u2?.username, avatar: u2?.avatar, status, roomId: pInfo?.roomId || null });
           }
           break;
@@ -281,25 +285,46 @@ function setupSignaling(server) {
         case 'send-friend-request': {
           const fromUserId = peerUserMap.get(peerId);
           if (!fromUserId) break;
-          const target = findUserByUsername(msg.username);
+          const target = await findUserByUsername(msg.username);
           if (!target) { ws.send(JSON.stringify({ type: 'friend-error', message: `User "${msg.username}" not found` })); break; }
           if (target.id === fromUserId) { ws.send(JSON.stringify({ type: 'friend-error', message: 'Cannot add yourself' })); break; }
-          const result = sendFriendRequest(fromUserId, target.id);
+          
+          const result = await sendFriendRequest(fromUserId, target.id);
           if (result.error) { ws.send(JSON.stringify({ type: 'friend-error', message: result.error })); break; }
-          // Notify target if online
+          
           const targetOnline = getOnline(target.id);
-          const fromUser = getRegisteredUser(fromUserId);
+          const fromUser = await getRegisteredUser(fromUserId);
           if (targetOnline?.ws?.readyState === 1) {
             targetOnline.ws.send(JSON.stringify({ type: 'friend-request', fromId: fromUserId, username: fromUser?.username, avatar: fromUser?.avatar }));
           }
-          // Confirm to sender (could be auto-accepted)
-          ws.send(JSON.stringify({ type: 'friend-request-sent', targetId: target.id, targetUsername: target.username, autoAccepted: !!result.autoAccepted }));
+          
+          ws.send(JSON.stringify({ 
+            type: 'friend-request-sent', 
+            targetId: target.id, 
+            targetUsername: target.username, 
+            autoAccepted: !!result.autoAccepted 
+          }));
+          
           // If auto-accepted, send friend-added to both
-          if (result.ok && areFriends(fromUserId, target.id)) {
+          if (result.ok && (await areFriends(fromUserId, target.id))) {
             const senderPresence = getOnline(fromUserId);
-            ws.send(JSON.stringify({ type: 'friend-added', friend: { id: target.id, username: target.username, avatar: target.avatar, status: targetOnline ? targetOnline.status : 'offline', roomId: targetOnline?.roomId || null } }));
+            ws.send(JSON.stringify({ 
+              type: 'friend-added', 
+              friend: { 
+                id: target.id, username: target.username, avatar: target.avatar, 
+                status: targetOnline ? targetOnline.status : 'offline', 
+                roomId: targetOnline?.roomId || null 
+              } 
+            }));
             if (targetOnline?.ws?.readyState === 1) {
-              targetOnline.ws.send(JSON.stringify({ type: 'friend-added', friend: { id: fromUserId, username: fromUser?.username, avatar: fromUser?.avatar, status: senderPresence ? senderPresence.status : 'online', roomId: senderPresence?.roomId || null } }));
+              targetOnline.ws.send(JSON.stringify({ 
+                type: 'friend-added', 
+                friend: { 
+                  id: fromUserId, username: fromUser?.username, avatar: fromUser?.avatar, 
+                  status: senderPresence ? senderPresence.status : 'online', 
+                  roomId: senderPresence?.roomId || null 
+                } 
+              }));
             }
           }
           break;
@@ -308,30 +333,45 @@ function setupSignaling(server) {
         case 'accept-friend-request': {
           const userId = peerUserMap.get(peerId);
           if (!userId) break;
-          const result = acceptFriendRequest(userId, msg.fromId);
+          const result = await acceptFriendRequest(userId, msg.fromId);
           if (result.error) break;
-          const fromUser = getRegisteredUser(msg.fromId);
-          const myUser  = getRegisteredUser(userId);
-          const myOnline   = getOnline(userId);
+          
+          const fromUser = await getRegisteredUser(msg.fromId);
+          const myUser = await getRegisteredUser(userId);
+          const myOnline = getOnline(userId);
           const fromOnline = getOnline(msg.fromId);
-          // Tell me: friend added
-          ws.send(JSON.stringify({ type: 'friend-added', friend: { id: msg.fromId, username: fromUser?.username, avatar: fromUser?.avatar, status: fromOnline ? fromOnline.status : 'offline', roomId: fromOnline?.roomId || null } }));
-          // Tell them: friend added
+          
+          ws.send(JSON.stringify({ 
+            type: 'friend-added', 
+            friend: { 
+              id: msg.fromId, username: fromUser?.username, avatar: fromUser?.avatar, 
+              status: fromOnline ? fromOnline.status : 'offline', 
+              roomId: fromOnline?.roomId || null 
+            } 
+          }));
+          
           if (fromOnline?.ws?.readyState === 1) {
-            fromOnline.ws.send(JSON.stringify({ type: 'friend-added', friend: { id: userId, username: myUser?.username, avatar: myUser?.avatar, status: myOnline ? myOnline.status : 'online', roomId: myOnline?.roomId || null } }));
+            fromOnline.ws.send(JSON.stringify({ 
+              type: 'friend-added', 
+              friend: { 
+                id: userId, username: myUser?.username, avatar: myUser?.avatar, 
+                status: myOnline ? myOnline.status : 'online', 
+                roomId: myOnline?.roomId || null 
+              } 
+            }));
           }
           break;
         }
 
         case 'decline-friend-request': {
           const userId = peerUserMap.get(peerId);
-          if (userId) declineFriendRequest(userId, msg.fromId);
+          if (userId) await declineFriendRequest(userId, msg.fromId);
           break;
         }
 
         case 'remove-friend': {
           const userId = peerUserMap.get(peerId);
-          if (userId) removeFriend(userId, msg.friendId);
+          if (userId) await removeFriend(userId, msg.friendId);
           ws.send(JSON.stringify({ type: 'friend-removed', friendId: msg.friendId }));
           break;
         }
@@ -339,7 +379,7 @@ function setupSignaling(server) {
         case 'invite-to-room': {
           const fromUserId = peerUserMap.get(peerId);
           if (!fromUserId) break;
-          const fromUser = getRegisteredUser(fromUserId);
+          const fromUser = await getRegisteredUser(fromUserId);
           const targetOnline = getOnline(msg.friendId);
           if (targetOnline?.ws?.readyState === 1) {
             targetOnline.ws.send(JSON.stringify({
@@ -357,7 +397,8 @@ function setupSignaling(server) {
         case 'get-friends': {
           const userId = peerUserMap.get(peerId);
           if (!userId) break;
-          ws.send(JSON.stringify({ type: 'friends-list', friends: getFriendsWithPresence(userId) }));
+          const friends = await getFriendsWithPresence(userId);
+          ws.send(JSON.stringify({ type: 'friends-list', friends }));
           break;
         }
 
@@ -367,18 +408,18 @@ function setupSignaling(server) {
     });
 
     // ─── Disconnect Handler ────────────────────────────────────────────────────
-    ws.on('close', () => {
+    ws.on('close', async () => {
       const roomId = getPeerRoom(peerId);
       if (roomId) {
         removePeerFromRoom(roomId, peerId);
         broadcast(roomId, { type: 'peer-left', peerId });
       }
-      // Mark user offline, notify friends
+      
       const userId = peerUserMap.get(peerId);
       if (userId) {
         setOffline(userId);
         peerUserMap.delete(peerId);
-        const u = getRegisteredUser(userId);
+        const u = await getRegisteredUser(userId);
         notifyFriends(userId, { type: 'friend-status', userId, username: u?.username, avatar: u?.avatar, status: 'offline', roomId: null });
       }
       peerSockets.delete(peerId);

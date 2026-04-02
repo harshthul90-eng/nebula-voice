@@ -4,12 +4,9 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { v4: uuidv4 } = require('uuid');
+const User = require('./models/User');
 
 const router = express.Router();
-
-// ─── In-Memory User Store ─────────────────────────────────────────────────── 
-// Production: replace with PostgreSQL / MongoDB
-const users = new Map();
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
@@ -55,62 +52,72 @@ if (googleOAuthReady) {
           process.env.GOOGLE_CALLBACK_URL ||
           'http://localhost:3001/api/auth/google/callback',
       },
-      (_accessToken, _refreshToken, profile, done) => {
-        const email = profile.emails?.[0]?.value || null;
-        const googleId = profile.id;
+      async (_accessToken, _refreshToken, profile, done) => {
+        try {
+          const email = profile.emails?.[0]?.value || null;
+          const googleId = profile.id;
 
-        // Find by googleId first, then by email (account linking)
-        let user = [...users.values()].find(
-          (u) => u.googleId === googleId || (email && u.email === email)
-        );
+          // Find by googleId first, then by email (account linking)
+          let user = await User.findOne({ 
+            $or: [{ googleId }, { email: email || 'nevermatch' }] 
+          });
 
-        if (!user) {
-          // Create brand-new user from Google profile
-          user = {
-            id: uuidv4(),
-            username: generateUniqueUsername(
-              profile.displayName || email?.split('@')[0] || 'user'
-            ),
-            email,
-            googleId,
-            passwordHash: null,
-            avatar: profile.photos?.[0]?.value || null,
-            createdAt: new Date().toISOString(),
-          };
-          users.set(user.id, user);
-        } else if (!user.googleId) {
-          // Link Google to existing password account
-          user.googleId = googleId;
-          if (!user.avatar) user.avatar = profile.photos?.[0]?.value || null;
-          if (!user.email) user.email = email;
+          if (!user) {
+            // Create brand-new user from Google profile
+            user = await User.create({
+              id: uuidv4(),
+              username: await generateUniqueUsername(
+                profile.displayName || email?.split('@')[0] || 'user'
+              ),
+              email,
+              googleId,
+              passwordHash: null,
+              avatar: profile.photos?.[0]?.value || null,
+            });
+          } else if (!user.googleId) {
+            // Link Google to existing password account
+            user.googleId = googleId;
+            if (!user.avatar) user.avatar = profile.photos?.[0]?.value || null;
+            if (!user.email) user.email = email;
+            await user.save();
+          }
+
+          done(null, user);
+        } catch (err) {
+          done(err);
         }
-
-        done(null, user);
       }
     )
   );
 }
 
 passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser((id, done) => done(null, users.get(id) || null));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findOne({ id });
+    done(null, user);
+  } catch (err) {
+    done(err);
+  }
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function generateUniqueUsername(base) {
+async function generateUniqueUsername(base) {
   // Sanitize: lowercase, replace spaces with underscores, strip special chars
   const clean = base.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-  if (!findUserByUsername(clean)) return clean;
+  if (!(await findUserByUsername(clean))) return clean;
   // Append random suffix until unique
   for (let i = 0; i < 100; i++) {
     const candidate = `${clean}_${Math.floor(Math.random() * 9000) + 1000}`;
-    if (!findUserByUsername(candidate)) return candidate;
+    if (!(await findUserByUsername(candidate))) return candidate;
   }
   return `${clean}_${uuidv4().slice(0, 8)}`;
 }
 
-function findUserByUsername(username) {
-  return [...users.values()].find(
-    (u) => u.username.toLowerCase() === username.toLowerCase()
-  );
+async function findUserByUsername(username) {
+  return await User.findOne({ 
+    username: { $regex: new RegExp(`^${username}$`, 'i') } 
+  });
 }
 
 function safeUser(user) {
@@ -132,22 +139,24 @@ router.post('/register', async (req, res) => {
     if (password.length < 6)
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
-    if (findUserByUsername(username))
+    if (await findUserByUsername(username)) {
+      console.log(`[Register] Failed: username "${username}" already taken`);
       return res.status(409).json({ error: 'Username is already taken' });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = {
+    const user = await User.create({
       id: uuidv4(),
       username,
       email: null,
       googleId: null,
       passwordHash,
       avatar: null,
-      createdAt: new Date().toISOString(),
-    };
-    users.set(user.id, user);
+    });
 
+    console.log(`[Register] Success: ${username} (ID: ${user.id})`);
     const token = generateToken(user);
+
     res.status(201).json({ token, user: safeUser(user) });
   } catch (err) {
     console.error('Register error:', err);
@@ -162,14 +171,19 @@ router.post('/login', async (req, res) => {
     if (!username || !password)
       return res.status(400).json({ error: 'Username and password are required' });
 
-    const user = findUserByUsername(username);
-    if (!user || !user.passwordHash)
+    const user = await findUserByUsername(username);
+    if (!user || !user.passwordHash) {
+      console.log(`[Login] Failed: user NOT found or no password (username: ${username})`);
       return res.status(401).json({ error: 'Invalid username or password' });
+    }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid)
+    if (!valid) {
+      console.log(`[Login] Failed: wrong password (username: ${username})`);
       return res.status(401).json({ error: 'Invalid username or password' });
+    }
 
+    console.log(`[Login] Success: ${username}`);
     const token = generateToken(user);
     res.json({ token, user: safeUser(user) });
   } catch (err) {
@@ -211,17 +225,21 @@ router.get(
 );
 
 // GET /api/me — verify token and return user profile
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer '))
     return res.status(401).json({ error: 'Authorization header missing' });
 
-  const user = verifyToken(auth.slice(7));
-  if (!user) return res.status(401).json({ error: 'Token invalid or expired' });
+  const payload = verifyToken(auth.slice(7));
+  if (!payload) return res.status(401).json({ error: 'Token invalid or expired' });
 
-  res.json({ user });
+  const user = await User.findOne({ id: payload.id });
+  if (!user) return res.status(401).json({ error: 'User not found' });
+
+  res.json({ user: safeUser(user) });
 });
 
 module.exports = router;
 module.exports.verifyToken = verifyToken;
-module.exports.getAllUsers = () => [...users.values()];
+module.exports.getAllUsers = async () => await User.find({});
+module.exports.getUserById = async (id) => await User.findOne({ id });
