@@ -1,0 +1,217 @@
+/* ============================================================
+   Nebula Holographic Theme Override
+   ============================================================ */
+
+:root {
+  /* Translucent Glass Backgrounds */
+  --bg-primary:    #000000;
+  --bg-secondary:  rgba(15, 15, 15, 0.65);
+  --bg-tertiary:   rgba(25, 25, 25, 0.5);
+  --bg-hover:      rgba(255, 255, 255, 0.08);
+
+  /* Neon Accents */
+  --accent:        #39FF14;
+  --accent-purple: #9333EA;
+  --accent-dim:    rgba(57, 255, 20, 0.15);
+  --accent-glow:   rgba(147, 51, 234, 0.4);
+
+  /* Glass Borders */
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-light:  rgba(255, 255, 255, 0.03);
+
+  /* Expanded Radiuses for Floating Blocks */
+  --radius-md:     12px;
+  --radius-lg:     20px;
+}
+
+/* ─── Ambient Glow Background ─── */
+body::before {
+  content: '';
+  position: fixed;
+  width: 50vw; height: 50vw;
+  top: -20vh; left: -10vw;
+  background: var(--accent-purple);
+  filter: blur(150px);
+  border-radius: 50%;
+  opacity: 0.15;
+  z-index: -1;
+  pointer-events: none;
+  animation: bgFloat 18s infinite ease-in-out alternate;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  width: 40vw; height: 40vw;
+  bottom: -15vh; right: -5vw;
+  background: var(--accent);
+  filter: blur(120px);
+  border-radius: 50%;
+  opacity: 0.12;
+  z-index: -1;
+  pointer-events: none;
+  animation: bgFloat2 22s infinite ease-in-out alternate;
+}
+
+@keyframes bgFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(50px, 30px) scale(1.1); }
+}
+
+@keyframes bgFloat2 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-40px, -40px) scale(1.15); }
+}
+
+/* ─── Transparent Views ─── */
+/* Make views transparent so ambient global background shows through */
+.view {
+  background: transparent !important;
+}
+
+/* ─── Floating Main Sections ─── */
+.dashboard-content, .room-tab-content {
+  margin: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 24px;
+}
+
+/* Adjust grid for room to look detached */
+.room-tab-content {
+  display: flex !important;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* ─── Floating User Bar ─── */
+.user-bar {
+  margin: 0 16px 16px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border); /* override flush border */
+}
+
+/* ─── Glass Titlebar ─── */
+.titlebar {
+  background: rgba(10, 10, 10, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Floating Friends Panel Sidebar ─── */
+.friends-panel {
+  background: rgba(15, 15, 15, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-left: 1px solid var(--border);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Floating Cards (Participants, Quick Rooms) ─── */
+.participant-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.participant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Glowing active speaker */
+.participant-card.speaking {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-dim), inset 0 0 10px var(--accent-dim);
+}
+.participant-card.speaking .participant-avatar {
+  box-shadow: 0 0 0 2px var(--bg-tertiary), 0 0 0 4px var(--accent);
+}
+
+.quick-room-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(10px);
+}
+
+.quick-room-card:hover {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+/* ─── Inputs & Buttons with Neon glow ─── */
+.room-input, .message-input, .add-friend-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+}
+.room-input:focus, .message-input:focus, .add-friend-input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2);
+}
+
+/* Primary Button Glow: Green */
+.btn-primary, .btn-join, .capacity-btn {
+  background: linear-gradient(135deg, var(--accent), #22C55E) !important;
+  color: #000 !important;
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.4) !important;
+  border: none !important;
+}
+.btn-primary:hover, .btn-join:hover, .capacity-btn:hover {
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.6) !important;
+  transform: translateY(-2px);
+}
+
+/* Secondary Actions / Warning glows */
+.btn-leave {
+  background: linear-gradient(135deg, #F85149, #DC2626) !important;
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(248, 81, 73, 0.3) !important;
+  border: none !important;
+}
+.btn-leave:hover { box-shadow: 0 0 25px rgba(248, 81, 73, 0.5) !important; }
+
+/* Room Header detach */
+.room-header {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 0;
+}
+
+.chat-panel {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ─── Status Dots (Neon Colors) ─── */
+.status-online { background: var(--accent) !important; box-shadow: 0 0 8px var(--accent) !important; }
+.status-in-match { background: var(--accent-purple) !important; box-shadow: 0 0 8px var(--accent-purple) !important; }
+
+/* ─── Scrollbars ─── */
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
