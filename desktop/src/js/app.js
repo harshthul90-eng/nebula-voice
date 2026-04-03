@@ -45,9 +45,14 @@ function wireTitlebar() {
 // ─── Session Persistence ──────────────────────────────────────────────────────
 async function loadSavedSession() {
   const api = window.nebula;
-  if (!api) return false;
+  let saved = null;
+  
+  if (api) {
+    saved = await api.getStore('session');
+  } else {
+    try { saved = JSON.parse(localStorage.getItem('session')); } catch {}
+  }
 
-  const saved = await api.getStore('session');
   if (!saved?.token) return false;
 
   // Verify token is still valid
@@ -55,7 +60,10 @@ async function loadSavedSession() {
     const res = await fetch('https://nebula-voicechat.onrender.com/api/me', {
       headers: { Authorization: `Bearer ${saved.token}` },
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      clearSession();
+      return false;
+    }
     const { user } = await res.json();
 
     State.token = saved.token;
@@ -68,14 +76,22 @@ async function loadSavedSession() {
 
 async function saveSession() {
   const api = window.nebula;
-  if (api && State.token) {
-    await api.setStore('session', { token: State.token });
+  if (State.token) {
+    if (api) {
+      await api.setStore('session', { token: State.token });
+    } else {
+      localStorage.setItem('session', JSON.stringify({ token: State.token }));
+    }
   }
 }
 
 async function clearSession() {
   const api = window.nebula;
-  if (api) await api.setStore('session', null);
+  if (api) {
+    await api.setStore('session', null);
+  } else {
+    localStorage.removeItem('session');
+  }
   State.token = null;
   State.user = null;
   State.currentRoom = null;

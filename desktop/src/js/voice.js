@@ -149,7 +149,16 @@ class VoiceEngine {
   connect(token) {
     if (token) this._authToken = token;
     return new Promise((resolve, reject) => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) return resolve();
+      if (this.ws) {
+        if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+          return resolve();
+        }
+        // Destroy old closed/closing listeners to prevent duplicate ghosts
+        this.ws.onmessage = null;
+        this.ws.onclose = null;
+        this.ws.onopen = null;
+        this.ws.onerror = null;
+      }
       this.ws = new WebSocket(WS_URL);
 
       this.ws.onopen = () => {

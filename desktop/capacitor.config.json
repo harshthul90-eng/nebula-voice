@@ -1,0 +1,6 @@
+{
+  "appId": "com.harshal.nebula",
+  "appName": "Nebula",
+  "webDir": "src",
+  "bundledWebRuntime": false
+}

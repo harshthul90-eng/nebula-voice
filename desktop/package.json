@@ -9,21 +9,41 @@
     "build": "electron-builder --win"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "astral-regex": "^2.0.0",
     "electron-store": "^8.1.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.nebula.app",
     "productName": "Nebula",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icon.ico"
     },
-    "protocols": [{ "name": "Nebula", "schemes": ["nebula"] }],
+    "protocols": [
+      {
+        "name": "Nebula",
+        "schemes": [
+          "nebula"
+        ]
+      }
+    ],
     "extraResources": []
   }
 }
