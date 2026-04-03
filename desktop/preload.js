@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('nebula', {
   close: () => ipcRenderer.send('window-close'),
 
   // ── Google OAuth ───────────────────────────────────────────────────────────
-  openGoogleAuth: () => ipcRenderer.send('open-google-auth'),
+  openGoogleAuth: (url) => ipcRenderer.send('open-google-auth', url),
   onGoogleAuthResult: (cb) =>
     ipcRenderer.on('google-auth-result', (_event, data) => cb(data)),
 

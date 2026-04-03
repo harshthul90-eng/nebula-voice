@@ -107,7 +107,7 @@ document.getElementById('btn-google-signin')?.addEventListener('click', () => {
 
   if (api?.openGoogleAuth) {
     // Electron: open an in-app OAuth window
-    api.openGoogleAuth();
+    api.openGoogleAuth(`${API}/auth/google`);
 
     // Listen for result
     api.onGoogleAuthResult((result) => {

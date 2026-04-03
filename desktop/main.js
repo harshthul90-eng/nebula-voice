@@ -176,7 +176,7 @@ function registerIpcHandlers() {
   });
 
   // Google OAuth — open an in-app browser window
-  ipcMain.on('open-google-auth', () => {
+  ipcMain.on('open-google-auth', (event, url) => {
     if (authWindow) { authWindow.focus(); return; }
 
     authWindow = new BrowserWindow({
@@ -189,7 +189,7 @@ function registerIpcHandlers() {
       webPreferences: { nodeIntegration: false, contextIsolation: true },
     });
 
-    authWindow.loadURL('https://nebula-voicechat.onrender.com/api/auth/google');
+    authWindow.loadURL(url);
 
     // Intercept the nebula:// deep-link redirect from our backend
     authWindow.webContents.on('will-redirect', (event, url) => {

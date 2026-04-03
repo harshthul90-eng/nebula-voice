@@ -74,14 +74,36 @@
   }
 
   /* ─── Side Panels (Friends & World Chat) ───────────────────── */
-  .friends-panel,
-  .global-chat-panel,
+  .friends-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    right: -100% !important;
+    z-index: 500 !important;
+    backdrop-filter: blur(40px) brightness(0.8);
+    background: rgba(10, 10, 10, 0.90) !important;
+  }
+  .friends-panel.open {
+    right: 0 !important;
+  }
+
+  .global-chat-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    left: -100% !important;
+    transform: none !important; 
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 500 !important;
+    backdrop-filter: blur(40px) brightness(0.8);
+    background: rgba(10, 10, 10, 0.90) !important;
+  }
+  .global-chat-panel.open {
+    left: 0 !important;
+    transform: none !important;
+  }
+
   .settings-panel {
     width: 100% !important;
     max-width: 100% !important;
-    z-index: 500 !important; /* Always on top of dashboard */
-    backdrop-filter: blur(40px) brightness(0.8);
-    background: rgba(10, 10, 10, 0.90);
   }
 
   /* Room Match View adjustments */
