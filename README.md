@@ -1,4 +1,4 @@
-# VoiceKord 🎙
+# Nebula 🎙
 
 > Low-latency in-game voice communication for Windows gamers. Built with Electron + WebRTC.
 
